@@ -117,12 +117,28 @@ fn generate_skill() {
 }
 
 fn generate_boss() {
-    let mut rng = rand::thread_rng();
     let categories = load_bosses();
     let keys: Vec<&str> = categories.keys().cloned().collect();
-    let category = keys.choose(&mut rng).unwrap();
-    let bosses = categories.get(category).unwrap();
-    let boss = bosses.choose(&mut rng).unwrap();
+    println!("\nAvailable Categories:");
+    for (index, key) in keys.iter().enumerate() {
+        println!("{}. {}", index + 1, key);
+    }
+    println!("Enter the number of any category you wish to exclude, or 0 to include all:");
+
+    let mut input = String::new();
+    io::stdin().read_line(&mut input).unwrap();
+    let exclusion = input.trim().parse::<usize>().unwrap_or(0);
+
+    let mut rng = rand::thread_rng();
+    let filtered_keys: Vec<&str> = if exclusion > 0 && exclusion <= keys.len() {
+        keys.into_iter().enumerate().filter(|&(i, _)| i + 1 != exclusion).map(|(_, k)| k).collect()
+    } else {
+        keys
+    };
+
+    let category = filtered_keys.choose(&mut rng).expect("No categories available");
+    let bosses = categories.get(category).expect("Category not found");
+    let boss = bosses.choose(&mut rng).expect("No bosses found in category");
 
     println!();
     let mut table = Table::new();
