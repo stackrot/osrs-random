@@ -109,9 +109,10 @@ fn generate_skill() {
                   "Construction", "Hunter"];
     let skill = skills.choose(&mut rng).unwrap();
 
+    println!();
     let mut table = Table::new();
-    table.add_row(row!["Skill", "Description"]);
-    table.add_row(row![skill.bold().green(), "Randomly selected skill to train"]);
+    table.add_row(row!["Randomly selected skill to train"]);
+    table.add_row(row![skill.bold().green()]);
     table.printstd();
 }
 
@@ -123,6 +124,7 @@ fn generate_boss() {
     let bosses = categories.get(category).unwrap();
     let boss = bosses.choose(&mut rng).unwrap();
 
+    println!();
     let mut table = Table::new();
     table.add_row(row!["Category", "Boss"]);
     table.add_row(row![category.bold().yellow(), boss.bold().green()]);
