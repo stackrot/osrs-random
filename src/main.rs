@@ -24,16 +24,6 @@ fn main() {
     }
 }
 
-fn generate_boss() {
-    let mut rng = rand::thread_rng();
-    let categories = load_bosses();
-    let category = categories.keys().collect::<Vec<&str>>().choose(&mut rng).unwrap();
-    let bosses = categories.get(*category).unwrap();
-    let boss = bosses.choose(&mut rng).unwrap();
-    println!("Category: {}", category);
-    println!("Randomly selected boss: {}", boss);
-}
-
 fn load_bosses() -> HashMap<&'static str, Vec<&'static str>> {
     HashMap::from([
         ("World Bosses", vec![
@@ -69,4 +59,15 @@ fn generate_skill() {
     let selected_group = grouped_skills.choose(&mut rng).unwrap();
     let skill = selected_group.choose(&mut rng).unwrap();
     println!("Randomly selected skill: {}", skill);
+}
+
+fn generate_boss() {
+    let mut rng = rand::thread_rng();
+    let categories = load_bosses();
+    let keys: Vec<&str> = categories.keys().cloned().collect();
+    let category = keys.choose(&mut rng).unwrap();
+    let bosses = categories.get(category).unwrap();
+    let boss = bosses.choose(&mut rng).unwrap();
+    println!("Category: {}", category);
+    println!("Randomly selected boss: {}", boss);
 }
