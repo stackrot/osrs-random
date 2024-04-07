@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 use rand::seq::SliceRandom;
 use std::collections::HashMap;
 use std::io::{self, Write};
+use colored::*;
 
 #[derive(Parser)]
 #[clap(author = "stackrot", version = "1.0", about = "OSRS Random Generator")]
@@ -26,26 +27,42 @@ fn main() {
 }
 
 fn interactive_menu() {
-    let mut input = String::new();
     loop {
+        clear_screen();
+        println!("\n{}\n", "OSRS Random Generator".bold().underline().cyan());
         println!("Please choose an option:");
         println!("1. Boss Chooser");
         println!("2. Skill Chooser");
         println!("3. Exit");
         print!("Enter your choice (1, 2, or 3): ");
         io::stdout().flush().unwrap();
+
+        let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
 
         match input.trim() {
             "1" => generate_boss(),
             "2" => generate_skill(),
-            "3" => break,
-            _ => println!("Invalid choice, please try again."),
+            "3" => return,
+            _ => println!("{}", "Invalid choice, please try again.".red()),
         }
-        input.clear();
+
+        if !continue_prompt() {
+            return;
+        }
     }
 }
 
+fn continue_prompt() -> bool {
+    println!("{}", "Would you like to go back to the menu? (yes/no)".yellow());
+    let mut answer = String::new();
+    io::stdin().read_line(&mut answer).unwrap();
+    answer.trim().eq_ignore_ascii_case("yes")
+}
+
+fn clear_screen() {
+    print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
+}
 fn load_bosses() -> HashMap<&'static str, Vec<&'static str>> {
     HashMap::from([
         ("World Bosses", vec![
@@ -71,16 +88,12 @@ fn load_bosses() -> HashMap<&'static str, Vec<&'static str>> {
 
 fn generate_skill() {
     let mut rng = rand::thread_rng();
-    let combat_skills = vec!["Attack", "Strength", "Defence", "Ranged", "Prayer", "Magic", "Hitpoints"];
-    let other_skills = vec![
-        "Runecraft", "Crafting", "Mining", "Smithing", "Fishing", "Cooking", "Firemaking",
-        "Woodcutting", "Agility", "Herblore", "Thieving", "Fletching", "Slayer", "Farming",
-        "Construction", "Hunter"
-    ];
-    let grouped_skills = vec![combat_skills, other_skills];
-    let selected_group = grouped_skills.choose(&mut rng).unwrap();
-    let skill = selected_group.choose(&mut rng).unwrap();
-    println!("Randomly selected skill: {}", skill);
+    let skills = ["Attack", "Strength", "Defence", "Ranged", "Prayer", "Magic", "Hitpoints",
+                  "Runecraft", "Crafting", "Mining", "Smithing", "Fishing", "Cooking", "Firemaking",
+                  "Woodcutting", "Agility", "Herblore", "Thieving", "Fletching", "Slayer", "Farming",
+                  "Construction", "Hunter"];
+    let skill = skills.choose(&mut rng).unwrap();
+    println!("\nRandomly selected skill: {}", skill.bold().green());
 }
 
 fn generate_boss() {
@@ -90,6 +103,6 @@ fn generate_boss() {
     let category = keys.choose(&mut rng).unwrap();
     let bosses = categories.get(category).unwrap();
     let boss = bosses.choose(&mut rng).unwrap();
-    println!("Category: {}", category);
-    println!("Randomly selected boss: {}", boss);
+    println!("\nCategory: {}", category.bold().yellow());
+    println!("Randomly selected boss: {}", boss.bold().green());
 }
