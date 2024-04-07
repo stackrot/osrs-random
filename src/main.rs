@@ -1,13 +1,13 @@
-
 use clap::{Parser, Subcommand};
 use rand::seq::SliceRandom;
 use std::collections::HashMap;
+use std::io::{self, Write};
 
 #[derive(Parser)]
 #[clap(author = "stackrot", version = "1.0", about = "OSRS Random Generator")]
 struct Cli {
     #[clap(subcommand)]
-    command: Commands,
+    command: Option<Commands>,
 }
 
 #[derive(Subcommand)]
@@ -19,8 +19,30 @@ enum Commands {
 fn main() {
     let cli = Cli::parse();
     match &cli.command {
-        Commands::Boss => generate_boss(),
-        Commands::Skill => generate_skill(),
+        Some(Commands::Boss) => generate_boss(),
+        Some(Commands::Skill) => generate_skill(),
+        None => interactive_menu(),
+    }
+}
+
+fn interactive_menu() {
+    let mut input = String::new();
+    loop {
+        println!("Please choose an option:");
+        println!("1. Boss Chooser");
+        println!("2. Skill Chooser");
+        println!("3. Exit");
+        print!("Enter your choice (1, 2, or 3): ");
+        io::stdout().flush().unwrap();
+        io::stdin().read_line(&mut input).unwrap();
+
+        match input.trim() {
+            "1" => generate_boss(),
+            "2" => generate_skill(),
+            "3" => break,
+            _ => println!("Invalid choice, please try again."),
+        }
+        input.clear();
     }
 }
 
