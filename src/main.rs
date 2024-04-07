@@ -1,8 +1,9 @@
 use clap::{Parser, Subcommand};
+use colored::*;
+use prettytable::{Table, row};
 use rand::seq::SliceRandom;
 use std::collections::HashMap;
 use std::io::{self, Write};
-use colored::*;
 
 #[derive(Parser)]
 #[clap(author = "stackrot", version = "1.0", about = "OSRS Random Generator")]
@@ -13,8 +14,12 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    #[clap(about = "Generate a random boss from various categories")]
     Boss,
+    #[clap(about = "Generate a random skill to train")]
     Skill,
+    #[clap(about = "Display help information")]
+    Help,
 }
 
 fn main() {
@@ -22,6 +27,7 @@ fn main() {
     match &cli.command {
         Some(Commands::Boss) => generate_boss(),
         Some(Commands::Skill) => generate_skill(),
+        Some(Commands::Help) => show_help(),
         None => interactive_menu(),
     }
 }
@@ -53,6 +59,14 @@ fn interactive_menu() {
     }
 }
 
+fn show_help() {
+    println!("OSRS Random Generator Help:\n");
+    println!("1. Boss Chooser - Randomly select a boss from various categories.");
+    println!("2. Skill Chooser - Randomly select a skill to train.");
+    println!("3. Exit - Exit the application.\n");
+    println!("You can use the interactive menu or pass commands directly as arguments.");
+}
+
 fn continue_prompt() -> bool {
     println!("{}", "Would you like to go back to the menu? (yes/no)".yellow());
     let mut answer = String::new();
@@ -63,6 +77,7 @@ fn continue_prompt() -> bool {
 fn clear_screen() {
     print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
 }
+
 fn load_bosses() -> HashMap<&'static str, Vec<&'static str>> {
     HashMap::from([
         ("World Bosses", vec![
@@ -93,7 +108,11 @@ fn generate_skill() {
                   "Woodcutting", "Agility", "Herblore", "Thieving", "Fletching", "Slayer", "Farming",
                   "Construction", "Hunter"];
     let skill = skills.choose(&mut rng).unwrap();
-    println!("\nRandomly selected skill: {}", skill.bold().green());
+
+    let mut table = Table::new();
+    table.add_row(row!["Skill", "Description"]);
+    table.add_row(row![skill.bold().green(), "Randomly selected skill to train"]);
+    table.printstd();
 }
 
 fn generate_boss() {
@@ -103,6 +122,9 @@ fn generate_boss() {
     let category = keys.choose(&mut rng).unwrap();
     let bosses = categories.get(category).unwrap();
     let boss = bosses.choose(&mut rng).unwrap();
-    println!("\nCategory: {}", category.bold().yellow());
-    println!("Randomly selected boss: {}", boss.bold().green());
+
+    let mut table = Table::new();
+    table.add_row(row!["Category", "Boss"]);
+    table.add_row(row![category.bold().yellow(), boss.bold().green()]);
+    table.printstd();
 }
