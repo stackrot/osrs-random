@@ -35,12 +35,12 @@ fn main() {
 fn interactive_menu() {
     loop {
         clear_screen();
-        println!("\n{}\n", "OSRS Random Generator".bold().underline().cyan());
-        println!("Please choose an option:");
+        println!("{}", "OSRS Random Generator".bold().underline().cyan());
+        println!("{}", "Please choose an option:".cyan());
         println!("1. Boss Chooser");
         println!("2. Skill Chooser");
         println!("3. Exit");
-        print!("Enter your choice (1, 2, or 3): ");
+        print!("{}", "Enter your choice (1, 2, or 3): ".cyan());
         io::stdout().flush().unwrap();
 
         let mut input = String::new();
@@ -50,28 +50,28 @@ fn interactive_menu() {
             "1" => generate_boss(),
             "2" => generate_skill(),
             "3" => return,
-            _ => println!("{}", "Invalid choice, please try again.".red()),
-        }
-
-        if !continue_prompt() {
-            return;
+            _ => {
+                println!("{}", "Invalid choice, please try again.".red());
+                pause_before_clearing();
+            },
         }
     }
 }
 
 fn show_help() {
-    println!("OSRS Random Generator Help:\n");
+    clear_screen();
+    println!("{}", "OSRS Random Generator Help:".cyan());
     println!("1. Boss Chooser - Randomly select a boss from various categories.");
     println!("2. Skill Chooser - Randomly select a skill to train.");
     println!("3. Exit - Exit the application.\n");
     println!("You can use the interactive menu or pass commands directly as arguments.");
+    pause_before_clearing();
 }
 
-fn continue_prompt() -> bool {
-    println!("{}", "Would you like to go back to the menu? (yes/no)".yellow());
-    let mut answer = String::new();
-    io::stdin().read_line(&mut answer).unwrap();
-    answer.trim().eq_ignore_ascii_case("yes")
+fn pause_before_clearing() {
+    println!("\nPress enter to continue...");
+    let _ = io::stdin().read_line(&mut String::new()).unwrap();
+    clear_screen();
 }
 
 fn clear_screen() {
@@ -109,40 +109,65 @@ fn generate_skill() {
                   "Construction", "Hunter"];
     let skill = skills.choose(&mut rng).unwrap();
 
-    println!();
+    println!("\nRandomly selected skill to train:\n");
     let mut table = Table::new();
-    table.add_row(row!["Randomly selected skill to train"]);
     table.add_row(row![skill.bold().green()]);
     table.printstd();
+    pause_before_clearing();
 }
 
 fn generate_boss() {
     let categories = load_bosses();
     let keys: Vec<&str> = categories.keys().cloned().collect();
-    println!("\nAvailable Categories:");
-    for (index, key) in keys.iter().enumerate() {
-        println!("{}. {}", index + 1, key);
-    }
-    println!("Enter the number of any category you wish to exclude, or 0 to include all:");
+    
+    println!("{}", "\nDo you want to exclude any categories? (yes/no)".cyan());
+    let mut choice = String::new();
+    io::stdin().read_line(&mut choice).unwrap();
 
-    let mut input = String::new();
-    io::stdin().read_line(&mut input).unwrap();
-    let exclusion = input.trim().parse::<usize>().unwrap_or(0);
+    let mut exclusions = Vec::new();
+    if choice.trim().eq_ignore_ascii_case("yes") {
+        println!("{}", "\nEnter the numbers of categories you wish to exclude, separated by spaces (e.g., 1 3 5):".cyan());
+        for (index, key) in keys.iter().enumerate() {
+            println!("{}. {}", index + 1, key);
+        }
+
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).unwrap();
+        exclusions = input.trim().split_whitespace()
+            .filter_map(|num| num.parse::<usize>().ok())
+            .filter(|&num| num > 0 && num <= keys.len())
+            .collect();
+    }
 
     let mut rng = rand::thread_rng();
-    let filtered_keys: Vec<&str> = if exclusion > 0 && exclusion <= keys.len() {
-        keys.into_iter().enumerate().filter(|&(i, _)| i + 1 != exclusion).map(|(_, k)| k).collect()
-    } else {
-        keys
-    };
+    let filtered_keys_indices: Vec<usize> = keys.iter().enumerate()
+        .filter_map(|(index, _)| {
+            if !exclusions.contains(&(index + 1)) {
+                Some(index)
+            } else {
+                None
+            }
+        })
+        .collect();
 
-    let category = filtered_keys.choose(&mut rng).expect("No categories available");
-    let bosses = categories.get(category).expect("Category not found");
-    let boss = bosses.choose(&mut rng).expect("No bosses found in category");
+    if filtered_keys_indices.is_empty() {
+        println!("All categories have been excluded. No bosses available.");
+        return;
+    }
+
+    let filtered_keys: Vec<&str> = filtered_keys_indices.iter()
+        .map(|&index| keys[index])
+        .collect();
+
+    let category = filtered_keys.choose(&mut rng).unwrap();
+    let bosses = categories.get(category).unwrap();
+    let boss = bosses.choose(&mut rng).unwrap();
 
     println!();
     let mut table = Table::new();
     table.add_row(row!["Category", "Boss"]);
     table.add_row(row![category.bold().yellow(), boss.bold().green()]);
     table.printstd();
+    pause_before_clearing();
 }
+
