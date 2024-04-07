@@ -1,11 +1,12 @@
+
 use clap::{Parser, Subcommand};
 use rand::seq::SliceRandom;
 use std::collections::HashMap;
 
 #[derive(Parser)]
-#[command(author = "Your Name", version = "1.0", about = "OSRS Random Generator", long_about = None)]
+#[clap(author = "stackrot", version = "1.0", about = "OSRS Random Generator")]
 struct Cli {
-    #[command(subcommand)]
+    #[clap(subcommand)]
     command: Commands,
 }
 
@@ -26,8 +27,8 @@ fn main() {
 fn generate_boss() {
     let mut rng = rand::thread_rng();
     let categories = load_bosses();
-    let category = *categories.keys().collect::<Vec<&str>>().choose(&mut rng).unwrap();
-    let bosses = categories.get(category).unwrap();
+    let category = categories.keys().collect::<Vec<&str>>().choose(&mut rng).unwrap();
+    let bosses = categories.get(*category).unwrap();
     let boss = bosses.choose(&mut rng).unwrap();
     println!("Category: {}", category);
     println!("Randomly selected boss: {}", boss);
