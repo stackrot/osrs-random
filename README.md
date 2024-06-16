@@ -1,7 +1,7 @@
 # OSRS Random Generator
 
 ## Overview
-The OSRS Random Generator is a command-line tool designed to help OSRS players randomly select bosses and skills to focus on. 
+The OSRS Random Generator is a command-line tool designed to help OSRS players randomly select bosses and skills to focus on.
 
 ## Features
 - **Boss Chooser**: Randomly selects a boss from various categories within OSRS.
@@ -9,30 +9,57 @@ The OSRS Random Generator is a command-line tool designed to help OSRS players r
 
 ## Installation
 
-### Prerequisites
-Before you can use the OSRS Random Generator, you need to have Rust installed on your system. Rust provides the cargo package manager, which is essential for building and running Rust applications.
+You can download the latest release of the OSRS Random Generator for both Linux and Windows from the [Releases](https://github.com/stackrot/osrs-random/releases) page.
 
-### Installing Rust
-To install Rust, run the following command in your terminal:
+### Download and Run
 
-- **Windows**:
-  Install Rust using the Rustup-init executable:
-  1. Download the `rustup-init.exe` using the [official Rust instructions](https://forge.rust-lang.org/infra/other-installation-methods.html).
-  2. Run the downloaded executable and follow the on-screen instructions to install Rust.
-  3. After installation, restart your command prompt to ensure the Rust binaries are in your PATH.
+#### Linux
+1. Download the latest `osrs-random-linux.zip` from the [Releases](https://github.com/stackrot/osrs-random/releases) page.
+2. Unzip the file:
+    ```sh
+    unzip osrs-random-linux.zip
+    ```
+3. Make the binary executable:
+    ```sh
+    chmod +x osrs-random
+    ```
+4. Run the application:
+    ```sh
+    ./osrs-random
+    ```
 
-- **Linux/Mac**:
-Open a terminal and execute:
-`curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+#### Windows
+1. Download the latest `osrs-random-windows.zip` from the [Releases](https://github.com/stackrot/osrs-random/releases) page.
+2. Unzip the file.
+3. Run the application by double-clicking `osrs-random.exe` or executing it from the command prompt:
+    ```sh
+    osrs-random.exe
+    ```
 
-This command will download a script and start the installation of the Rust toolchain, which includes `cargo`, `rustc`, and other standard tools.
+## Usage
 
-### Cloning and Building the Application
-1. Clone the repository: `git clone https://github.com/stackrot/osrs-random.git`
+### Boss Chooser
+To randomly select a boss from various categories:
+```sh
+osrs-random boss
+```
 
-2. Navigate to the project directory: `cd osrs-random`
+### Skill Chooser
+To randomly pick a skill to train:
+```sh
+osrs-random skill
+```
 
-3. Build the application using Cargo: `cargo build --release`
+### Interactive Menu
+Run the application without arguments to use the interactive menu:
+```sh
+osrs-random
+```
 
-4. Run the application: `cargo run`
-    4.1. Alternatively, you can run the compiled binary directly: `./target/release/osrs-random`
+## Suggestions and Contributions
+
+If you have any suggestions, feature requests, or would like to contribute, please open an issue or submit a pull request on the [GitHub repository](https://github.com/stackrot/osrs-random).
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
