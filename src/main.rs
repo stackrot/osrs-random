@@ -21,7 +21,7 @@ static BOSS_CATEGORIES: Lazy<HashMap<&'static str, Vec<&'static str>>> = Lazy::n
         ]),
         ("Slayer Only Bosses", vec![
             "Grotesque Guardians", "Abyssal Sire", "Kraken", "Cerberus", "Thermonuclear Smoke Devil",
-            "Alchemical Hydra"
+            "Alchemical Hydra", "Araxxor"
         ]),
         ("Minigame Bosses", vec!["Gauntlet", "TzTok-Jad", "TzKal-Zuk", "Sol Heredit"]),
         ("Skilling Bosses", vec!["Tempoross", "Wintertodt", "Zalcano"]),
