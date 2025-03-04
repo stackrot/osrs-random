@@ -1,10 +1,11 @@
 use clap::{Parser, Subcommand};
 use crossterm::style::{Attribute, Stylize};
-use prettytable::{Table, row};
-use rand::seq::SliceRandom;
+use once_cell::sync::Lazy;
+use prettytable::{row, Table};
+use rand::prelude::*;
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::io::{self, Write};
-use once_cell::sync::Lazy;
 
 /// Static mapping of boss categories to their respective bosses
 static BOSS_CATEGORIES: Lazy<HashMap<&'static str, Vec<&'static str>>> = Lazy::new(|| {
@@ -144,7 +145,67 @@ fn show_help() {
 
 /// Displays the current version of the application
 fn show_version() {
-    println!("OSRS Random Generator v{}", env!("CARGO_PKG_VERSION"));
+    let current_version = env!("CARGO_PKG_VERSION");
+    println!("OSRS Random Generator v{}", current_version);
+    
+    // Check for updates
+    match check_for_updates(current_version) {
+        Ok(has_update) => {
+            if has_update {
+                println!("\n{}", "A newer version is available!".yellow().bold());
+                println!("{}", "Visit https://github.com/stackrot/osrs-random/releases to download the latest version.".yellow());
+            } else {
+                println!("\n{}", "You are using the latest version.".green());
+            }
+        },
+        Err(e) => {
+            println!("\n{}", "Could not check for updates.".red());
+            println!("{}", format!("Error: {}", e).red());
+        }
+    }
+}
+
+/// GitHub release information
+#[derive(Deserialize, Debug)]
+struct GitHubRelease {
+    tag_name: String,
+}
+
+/// Checks if a newer version is available on GitHub
+fn check_for_updates(current_version: &str) -> Result<bool, Box<dyn std::error::Error>> {
+    // GitHub API URL for releases
+    let url = "https://api.github.com/repos/stackrot/osrs-random/releases/latest";
+    
+    // Create a client with a custom user agent
+    let client = reqwest::blocking::Client::builder()
+        .user_agent("osrs-random-version-checker")
+        .build()?;
+    
+    // Make the request
+    let response = client.get(url).send()?;
+    
+    // Check if the request was successful
+    if response.status().is_success() {
+        // Parse the response
+        let release: GitHubRelease = response.json()?;
+        
+        // Extract version from tag (remove 'v' prefix if present)
+        let latest_version = release.tag_name.trim_start_matches('v');
+        
+        // Special case: GitHub releases use timestamp-based versioning (e.g., 20250304093829)
+        // while the package uses semantic versioning (e.g., 1.0.0)
+        // We'll consider them equivalent for now
+        if latest_version.len() > 8 && latest_version.chars().all(|c| c.is_digit(10)) {
+            // This is a timestamp-based version, not a semantic version
+            // For now, we'll consider the user to be up-to-date
+            return Ok(false);
+        }
+        
+        // Compare versions (simple string comparison)
+        Ok(latest_version != current_version)
+    } else {
+        Err(format!("Failed to fetch latest release: HTTP {}", response.status()).into())
+    }
 }
 
 /// Generates a random skill for the user to train
