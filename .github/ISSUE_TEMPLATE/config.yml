@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: OSRS Random Generator Discussions
+    url: https://github.com/stackrot/osrs-random/discussions
+    about: Please ask and answer questions here.
+  - name: OSRS Wiki
+    url: https://oldschool.runescape.wiki/
+    about: Check the OSRS Wiki for information about bosses. 

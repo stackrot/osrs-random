@@ -6,18 +6,20 @@ use std::collections::HashMap;
 use std::io::{self, Write};
 use once_cell::sync::Lazy;
 
+/// Static mapping of boss categories to their respective bosses
 static BOSS_CATEGORIES: Lazy<HashMap<&'static str, Vec<&'static str>>> = Lazy::new(|| {
     HashMap::from([
         ("World Bosses", vec![
             "Barrows", "Scurrius", "Giant Mole", "Deranged Archaeologist", "DKs", "Sarachnis",
             "Perilous Moons", "Kalphite Queen", "Corporeal Beast", "Zulrah", "Vorkath", "Phantom Muspah",
-            "Nightmare", "Duke Sucellus", "The Leviathan", "The Whisperer", "Vardorvis", "Obor",
-            "Bryophyta", "The Mimic", "Hespori", "Skotizo"
+            "Nightmare / Phosani's Nightmare", "Duke Sucellus", "The Leviathan", "The Whisperer", "Vardorvis", "Obor",
+            "Bryophyta", "The Mimic", "Hespori", "Skotizo", "Amoxliatl", "The Hueycoatl", "Royal Titans"
         ]),
-        ("God Wars", vec!["Kree'arra", "Zilyana", "Graador", "K'ril", "Nex"]),
+        ("God Wars", vec!["Kree'arra", "Zilyana", "Graardor", "K'ril", "Nex"]),
         ("Wilderness Bosses", vec![
-            "Chaos Fanatic", "Crazy Archaeologist", "Scorpia", "King Black Dragon", "Calvar'ion",
-            "Chaos Elemental", "Vet'ion", "Venenatis", "Callisto"
+            "Chaos Fanatic", "Crazy Archaeologist", "Scorpia", "King Black Dragon", 
+            "Vet'ion / Calvar'ion", "Venenatis / Spindel", "Callisto / Artio",
+            "Chaos Elemental"
         ]),
         ("Slayer Only Bosses", vec![
             "Grotesque Guardians", "Abyssal Sire", "Kraken", "Cerberus", "Thermonuclear Smoke Devil",
@@ -29,13 +31,15 @@ static BOSS_CATEGORIES: Lazy<HashMap<&'static str, Vec<&'static str>>> = Lazy::n
     ])
 });
 
+/// CLI configuration using clap
 #[derive(Parser)]
-#[clap(author = "stackrot", version = "1.0", about = "OSRS Random Generator")]
+#[clap(author = "stackrot", version = env!("CARGO_PKG_VERSION"), about = "OSRS Random Generator")]
 struct Cli {
     #[clap(subcommand)]
     command: Option<Commands>,
 }
 
+/// Available commands for the CLI
 #[derive(Subcommand)]
 enum Commands {
     #[clap(about = "Generate a random boss from various categories")]
@@ -44,18 +48,26 @@ enum Commands {
     Skill,
     #[clap(about = "Display help information")]
     Help,
+    #[clap(about = "List all available bosses")]
+    ListBosses,
+    #[clap(about = "Display version information")]
+    Version,
 }
 
+/// Main entry point for the application
 fn main() {
     let cli = Cli::parse();
     match &cli.command {
         Some(Commands::Boss) => generate_boss(),
         Some(Commands::Skill) => generate_skill(),
         Some(Commands::Help) => show_help(),
+        Some(Commands::ListBosses) => list_all_bosses(),
+        Some(Commands::Version) => show_version(),
         None => interactive_menu(),
     }
 }
 
+/// Displays an interactive menu for the user to choose options
 fn interactive_menu() {
     loop {
         clear_screen();
@@ -63,39 +75,55 @@ fn interactive_menu() {
         println!("{}", "Please choose an option:".cyan());
         println!("1. Boss Chooser");
         println!("2. Skill Chooser");
-        println!("3. Exit");
-        print!("{}", "Enter your choice (1, 2, or 3): ".cyan());
+        println!("3. List All Bosses");
+        println!("4. Version Information");
+        println!("5. Exit");
+        print!("{}", "Enter your choice (1-5): ".cyan());
         io::stdout().flush().unwrap();
 
         let input = read_input();
-        match input.as_str() {
+        match input.trim() {
             "1" => generate_boss(),
             "2" => generate_skill(),
-            "3" => return,
-            _ => {
-                println!("{}", "Invalid choice, please try again.".red());
+            "3" => list_all_bosses(),
+            "4" => {
+                clear_screen();
+                show_version();
                 pause_before_clearing();
             },
+            "5" => {
+                clear_screen();
+                println!("Thank you for using the OSRS Random Generator!");
+                break;
+            }
+            _ => {
+                clear_screen();
+                println!("{}", "Invalid option. Please try again.".red());
+                pause_before_clearing();
+            }
         }
     }
 }
 
+/// Reads a line of input from the user
 fn read_input() -> String {
     let mut input = String::new();
     io::stdin().read_line(&mut input).expect("Failed to read line");
     input.trim().to_string()
 }
 
+/// Pauses execution until the user presses enter, then clears the screen
 fn pause_before_clearing() {
     println!("\nPress enter to continue...");
     let _ = io::stdin().read_line(&mut String::new()).unwrap();
     clear_screen();
 }
 
+/// Clears the terminal screen based on the operating system
 fn clear_screen() {
     if cfg!(target_os = "windows") {
         std::process::Command::new("cmd")
-            .args(&["/C", "cls"])
+            .args(["/C", "cls"])
             .status()
             .unwrap();
     } else {
@@ -103,15 +131,23 @@ fn clear_screen() {
     }
 }
 
+/// Displays help information about the application
 fn show_help() {
     clear_screen();
     println!("{}", "OSRS Random Generator Help:".cyan());
     println!("1. Boss Chooser - Randomly select a boss from various categories.");
     println!("2. Skill Chooser - Randomly select a skill to train.");
-    println!("3. Exit - Exit the application.\n");
+    println!("3. List All Bosses - Display all available bosses by category.");
+    println!("4. Exit - Exit the application.\n");
     pause_before_clearing();
 }
 
+/// Displays the current version of the application
+fn show_version() {
+    println!("OSRS Random Generator v{}", env!("CARGO_PKG_VERSION"));
+}
+
+/// Generates a random skill for the user to train
 fn generate_skill() {
     let skills = [
         "Attack", "Strength", "Defence", "Ranged", "Prayer", "Magic", "Hitpoints",
@@ -128,6 +164,9 @@ fn generate_skill() {
     pause_before_clearing();
 }
 
+/// Generates a random boss for the user to fight
+/// 
+/// Allows the user to exclude certain categories of bosses
 fn generate_boss() {
     let keys: Vec<&str> = BOSS_CATEGORIES.keys().cloned().collect();
     println!("{}", "\nDo you want to exclude any categories? (yes/no)".cyan());
@@ -170,5 +209,53 @@ fn generate_boss() {
     table.add_row(row!["Category", "Boss"]);
     table.add_row(row![category.bold().yellow(), boss.bold().green()]);
     table.printstd();
+    pause_before_clearing();
+}
+
+/// Lists all available bosses organized by category
+/// 
+/// Also provides information about reporting missing bosses
+fn list_all_bosses() {
+    clear_screen();
+    println!("{}", "All Available Bosses:".bold().attribute(Attribute::Underlined).cyan());
+    println!();
+    
+    // Use simple text-based formatting instead of tables
+    for (category, bosses) in BOSS_CATEGORIES.iter() {
+        // Print category header
+        println!("{}: ", category.bold().yellow());
+        
+        // Print bosses with proper wrapping
+        let mut line = String::new();
+        let max_line_length = 80;
+        
+        for boss in bosses {
+            // If adding this boss would make the line too long, print the current line and start a new one
+            if line.len() + boss.len() + 2 > max_line_length && !line.is_empty() {
+                println!("  {}", line);
+                line.clear();
+            }
+            
+            // Add the boss to the current line
+            if line.is_empty() {
+                line.push_str(boss);
+            } else {
+                line.push_str(", ");
+                line.push_str(boss);
+            }
+        }
+        
+        // Print any remaining bosses
+        if !line.is_empty() {
+            println!("  {}", line);
+        }
+        
+        println!(); // Add a blank line between categories
+    }
+    
+    println!();
+    println!("{}", "Missing a boss? Please report it at:".cyan());
+    println!("{}", "https://github.com/stackrot/osrs-random/issues".underlined().cyan());
+    
     pause_before_clearing();
 }

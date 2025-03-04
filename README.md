@@ -6,6 +6,8 @@ The OSRS Random Generator is a command-line tool designed to help OSRS players r
 ## Features
 - **Boss Chooser**: Randomly selects a boss from various categories within OSRS.
 - **Skill Chooser**: Randomly picks a skill for training, helping you decide what to level up next.
+- **Boss List**: View all available bosses organized by category.
+- **Version Info**: Check which version of the tool you're using.
 
 ## Installation
 
@@ -50,11 +52,26 @@ To randomly pick a skill to train:
 osrs-random skill
 ```
 
+### List All Bosses
+To view all available bosses organized by category:
+```sh
+osrs-random list-bosses
+```
+
+### Check Version
+To check which version of the tool you're using:
+```sh
+osrs-random version
+```
+
 ### Interactive Menu
 Run the application without arguments to use the interactive menu:
 ```sh
 osrs-random
 ```
+
+## Missing a Boss?
+If you notice a boss that's missing from our list or have any other suggestions, please open an issue on our [GitHub repository](https://github.com/stackrot/osrs-random/issues).
 
 ## Suggestions and Contributions
 

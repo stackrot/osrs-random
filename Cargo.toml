@@ -1,12 +1,15 @@
 [package]
 name = "osrs-random"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 authors = ["stackrot <dev@stackrot.dev>"]
+description = "A random boss and skill generator for Old School RuneScape"
+repository = "https://github.com/stackrot/osrs-random"
+license = "MIT"
 
 [dependencies]
-rand = "0.8"
-clap = { version = "3.1", features = ["derive"] }
+rand = "0.8.5"
+clap = { version = "3.2", features = ["derive"] }
 prettytable-rs = "^0.10"
-once_cell = "1.10.0"
-crossterm = "0.24.0"
+once_cell = "1.18.0"
+crossterm = "0.26.1"
