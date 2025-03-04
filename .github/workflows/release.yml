@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1.9.0
@@ -28,7 +28,7 @@ jobs:
           zip osrs-random-linux.zip osrs-random
 
       - name: Upload Release Asset
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: osrs-random-linux
           path: release/osrs-random-linux.zip
@@ -37,7 +37,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1.9.0
@@ -55,7 +55,7 @@ jobs:
           powershell -Command "Compress-Archive -Path osrs-random.exe -DestinationPath osrs-random-windows.zip"
 
       - name: Upload Release Asset
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: osrs-random-windows
           path: release/osrs-random-windows.zip
@@ -66,13 +66,13 @@ jobs:
 
     steps:
       - name: Download Linux binary
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: osrs-random-linux
           path: .
 
       - name: Download Windows binary
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: osrs-random-windows
           path: .
@@ -87,32 +87,15 @@ jobs:
 
       - name: Create GitHub Release
         id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
-          release_name: ${{ env.RELEASE_NAME }}
+          name: ${{ env.RELEASE_NAME }}
           body: ${{ env.RELEASE_DESC }}
           draft: false
           prerelease: false
-
-      - name: Upload Linux binary to release
-        uses: actions/upload-release-asset@v1
+          files: |
+            ./osrs-random-linux.zip
+            ./osrs-random-windows.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./osrs-random-linux.zip
-          asset_name: osrs-random-linux.zip
-          asset_content_type: application/zip
-
-      - name: Upload Windows binary to release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./osrs-random-windows.zip
-          asset_name: osrs-random-windows.zip
-          asset_content_type: application/zip
