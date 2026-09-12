@@ -1,101 +1,73 @@
 # OSRS Random Generator
 
-A command-line boss and skill chooser for Old School RuneScape, for Linux and
-Windows.
+A command-line boss and skill chooser for Old School RuneScape, for Linux and Windows.
 
 ## Installation
 
-Download `osrs-random-linux.zip` or `osrs-random-windows.zip` from the
-[latest release](https://github.com/stackrot/osrs-random/releases/latest).
-Extract it and run `osrs-random` or `osrs-random.exe`. Linux builds require
-x86-64 and glibc 2.35 or newer; Windows builds target x86-64.
+Download and extract the [latest release](https://github.com/stackrot/osrs-random/releases/latest):
 
-On Linux, if needed:
+- **Windows:** use `osrs-random-windows.zip` and run `osrs-random.exe`.
+- **Linux:** use `osrs-random-linux.zip`, then run:
 
-```sh
-chmod +x osrs-random
-./osrs-random
-```
+  ```sh
+  chmod +x osrs-random
+  ./osrs-random
+  ```
 
-Existing versions need one manual download to gain the self-updater.
+Both builds require x86-64; Linux also requires glibc 2.35 or newer.
 
 ## Usage
 
-Run without arguments for the interactive menu. Commands return immediately
-without prompts, pauses or terminal clearing:
+Run without arguments for the interactive menu, or use these commands:
+
+| Command | Action |
+| --- | --- |
+| `osrs-random boss` | Choose a boss |
+| `osrs-random skill` | Choose a skill |
+| `osrs-random list-bosses` | List bosses by category |
+| `osrs-random list-skills` | List skills |
+| `osrs-random version` | Show the installed version |
+| `osrs-random --help` | Show all options |
+
+Exclude categories by name, using `list-bosses` to find the current names:
 
 ```sh
-osrs-random boss
-osrs-random boss --exclude 'The Wilderness bosses' --exclude 'Raids'
-osrs-random skill
-osrs-random list-bosses
-osrs-random list-skills
-osrs-random version
-osrs-random --help
+osrs-random boss --exclude "The Wilderness bosses" --exclude "Raids"
 ```
 
-Category names are case-insensitive; use `list-bosses` for current names. The
-interactive boss chooser lets you exclude categories by number. Selection keeps
-the original behaviour: choose a category uniformly, then a boss within it.
+Category names are case-insensitive; the interactive menu also lets you exclude them by number.
 
-## Live boss and skill data
+## Boss and skill data
 
-Bosses and categories come from the OSRS Wiki's
-[Bosses template](https://oldschool.runescape.wiki/w/Template:Bosses). Skills come
-from [Jagex's OSRS HiScores](https://secure.runescape.com/m=hiscore_oldschool/overall).
-New entries appear after the upstream source lists them and the cache refreshes;
-no application release is needed. The Wiki determines boss categories. Grouped
-encounters such as Barrows and raids are kept together; boss variants are grouped
-under the first encounter name in the Wiki entry.
+Bosses and categories come from the [OSRS Wiki](https://oldschool.runescape.wiki/w/Template:Bosses), and skills from [Jagex's HiScores](https://secure.runescape.com/m=hiscore_oldschool/overall).
 
-The catalogue refreshes on first use and when its cache is at least 24 hours old.
-Each interactive session reuses its loaded catalogue. Force a refresh with:
+Lists refresh on first use and after 24 hours, so new entries need no app update.
 
-```sh
-osrs-random refresh-data
-```
+Cached or bundled data is used when the sources are unavailable.
 
-If a fetch fails or a source returns incomplete data, the app keeps the last valid
-cache, or uses a bundled snapshot on first run. It reports when it falls back.
-An explicit `refresh-data` failure returns a non-zero exit status and preserves
-the existing cache.
+| Command | Action |
+| --- | --- |
+| `osrs-random refresh-data` | Refresh the lists now |
+| `osrs-random --offline boss` | Choose a boss without network access |
 
-```sh
-osrs-random --offline boss
-osrs-random --offline list-skills
-```
+## Updates
 
-`--offline` disables data fetches and the interactive update check. The cache is
-stored in `$XDG_CACHE_HOME/osrs-random/catalog-v1.json` (normally
-`~/.cache/osrs-random/catalog-v1.json`) on Linux, or
-`%LOCALAPPDATA%\osrs-random\cache\catalog-v1.json` on Windows.
-
-Source outages and markup changes can delay new data. See
-[data sources and attribution](data/README.md) for the bundled snapshot.
-
-## Self-updating
+The interactive menu offers newer releases at startup, or you can update manually:
 
 ```sh
 osrs-random update --check
 osrs-random update
 ```
 
-The interactive menu checks for updates at startup and offers to install them.
-Declining continues normally. `update` explicitly installs the latest newer
-release from this repository's GitHub Releases. It downloads the ZIP for the
-compiled target, checks its size and GitHub SHA-256 digest, and replaces the
-executable. Restart the app afterwards. Its directory must be writable.
+Updates verify the download's SHA-256 digest before replacing the executable.
 
-Official binaries embed the timestamped release tag, so repeated checks recognise
-an installed release and older releases never replace newer ones. `version`
-prints the package version and embedded tag without accessing the network.
-Source builds without a release tag cannot be compared with timestamped releases;
-install an official release to use the updater. Other architectures and ABIs must
-be built and updated from source.
+Restart afterwards; the installation directory must be writable.
+
+Older installations need one manual download to gain the updater; source builds must be updated from source.
 
 ## Development
 
-Install current stable Rust, then:
+With current stable Rust installed:
 
 ```sh
 cargo build --locked
@@ -104,15 +76,10 @@ cargo fmt --check
 cargo clippy --locked --all-targets -- -D warnings
 ```
 
-Tests use local fixtures and do not require the live data sources. CI checks Linux
-and Windows. Pushes to `master` build both targets with the same release tag and
-publish only after checks and both uploads complete. Dependencies are locked in
-`Cargo.lock`.
+CI checks Linux and Windows; tests run without network access.
 
-Report bugs or data-source problems on the
-[issue tracker](https://github.com/stackrot/osrs-random/issues).
+Report bugs on the [issue tracker](https://github.com/stackrot/osrs-random/issues).
 
 ## Licence
 
-Application code is [MIT licensed](LICENSE). See [data attribution](data/README.md)
-for OSRS Wiki content.
+[MIT](LICENSE) for application code; see [data attribution](data/README.md) for OSRS Wiki content.
