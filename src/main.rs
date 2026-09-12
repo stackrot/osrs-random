@@ -105,16 +105,19 @@ fn show_version() {
     }
 }
 
-fn update_command(check: bool) -> Result<()> {
+fn update_command(check: bool) -> Result<bool> {
     match update::available()? {
         Some(release) if check => println!(
             "{} is available. Run 'osrs-random update' to install it.",
             release.tag_name
         ),
-        Some(release) => update::install(&release)?,
+        Some(release) => {
+            update::install(&release)?;
+            return Ok(true);
+        }
         None => println!("You are using the latest version."),
     }
-    Ok(())
+    Ok(false)
 }
 
 fn offer_update() -> Result<bool> {
@@ -173,10 +176,7 @@ fn interactive_menu(offline: bool) -> Result<()> {
 fn menu_action(input: &str, offline: bool, catalog: &mut Option<Catalog>) -> Result<bool> {
     match input {
         "4" => show_version(),
-        "6" if !offline => {
-            update_command(false)?;
-            return Ok(true);
-        }
+        "6" if !offline => return update_command(false),
         "7" if !offline => {
             *catalog = Some(catalog::load(true, false)?);
             println!("Refreshed boss and skill data.");
