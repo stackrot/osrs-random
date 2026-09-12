@@ -1,5 +1,6 @@
 mod catalog;
 mod net;
+mod update;
 
 use anyhow::{bail, Context, Result};
 use catalog::Catalog;
@@ -39,6 +40,12 @@ enum Commands {
     RefreshData,
     /// Display the installed version and release tag
     Version,
+    /// Check for and install the latest release
+    Update {
+        /// Check for an update without installing it
+        #[arg(long)]
+        check: bool,
+    },
 }
 
 fn main() -> ExitCode {
@@ -53,6 +60,12 @@ fn main() -> ExitCode {
 fn run(cli: Cli) -> Result<()> {
     match cli.command {
         Some(Commands::Version) => show_version(),
+        Some(Commands::Update { check }) => {
+            if cli.offline {
+                bail!("Updating requires a network connection; remove --offline");
+            }
+            update_command(check)?;
+        }
         Some(Commands::RefreshData) => {
             if cli.offline {
                 bail!("Refreshing data requires a network connection; remove --offline");
@@ -87,18 +100,52 @@ fn run(cli: Cli) -> Result<()> {
 
 fn show_version() {
     println!("OSRS Random Generator v{}", env!("CARGO_PKG_VERSION"));
+    if let Some(tag) = update::RELEASE_TAG {
+        println!("Release: {tag}");
+    }
+}
+
+fn update_command(check: bool) -> Result<()> {
+    match update::available()? {
+        Some(release) if check => println!(
+            "{} is available. Run 'osrs-random update' to install it.",
+            release.tag_name
+        ),
+        Some(release) => update::install(&release)?,
+        None => println!("You are using the latest version."),
+    }
+    Ok(())
+}
+
+fn offer_update() -> Result<bool> {
+    match update::available() {
+        Ok(Some(release)) => {
+            println!("{} is available. Install it now? [y/N]", release.tag_name);
+            if read_input()?
+                .is_some_and(|input| matches!(input.to_ascii_lowercase().as_str(), "y" | "yes"))
+            {
+                update::install(&release)?;
+                pause()?;
+                return Ok(true);
+            }
+        }
+        Ok(None) => {}
+        Err(error) => eprintln!("Could not check for updates: {error}"),
+    }
+    Ok(false)
 }
 
 fn interactive_menu(offline: bool) -> Result<()> {
     clear_screen()?;
+    if !offline && offer_update()? {
+        return Ok(());
+    }
     let mut catalog = None;
     loop {
         println!("{}", "OSRS Random Generator".bold().underlined().cyan());
         println!("1. Boss Chooser\n2. Skill Chooser\n3. List All Bosses");
-        println!(
-            "4. Version Information\n5. Exit\n6. Refresh Bosses and Skills\n7. List All Skills"
-        );
-        print!("Enter your choice (1-7): ");
+        println!("4. Version Information\n5. Exit\n6. Update Application\n7. Refresh Bosses and Skills\n8. List All Skills");
+        print!("Enter your choice (1-8): ");
         io::stdout().flush()?;
         let Some(input) = read_input()? else {
             return Ok(());
@@ -127,11 +174,15 @@ fn menu_action(input: &str, offline: bool, catalog: &mut Option<Catalog>) -> Res
     match input {
         "4" => show_version(),
         "6" if !offline => {
+            update_command(false)?;
+            return Ok(true);
+        }
+        "7" if !offline => {
             *catalog = Some(catalog::load(true, false)?);
             println!("Refreshed boss and skill data.");
         }
-        "6" => bail!("This option requires a network connection"),
-        "1" | "2" | "3" | "7" => {
+        "6" | "7" => bail!("This option requires a network connection"),
+        "1" | "2" | "3" | "8" => {
             if catalog.is_none() {
                 *catalog = Some(catalog::load(false, offline)?);
             }

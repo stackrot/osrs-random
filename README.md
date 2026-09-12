@@ -17,6 +17,8 @@ chmod +x osrs-random
 ./osrs-random
 ```
 
+Existing versions need one manual download to gain the self-updater.
+
 ## Usage
 
 Run without arguments for the interactive menu. Commands return immediately
@@ -63,13 +65,33 @@ osrs-random --offline boss
 osrs-random --offline list-skills
 ```
 
-`--offline` disables data fetches. The cache is
+`--offline` disables data fetches and the interactive update check. The cache is
 stored in `$XDG_CACHE_HOME/osrs-random/catalog-v1.json` (normally
 `~/.cache/osrs-random/catalog-v1.json`) on Linux, or
 `%LOCALAPPDATA%\osrs-random\cache\catalog-v1.json` on Windows.
 
 Source outages and markup changes can delay new data. See
 [data sources and attribution](data/README.md) for the bundled snapshot.
+
+## Self-updating
+
+```sh
+osrs-random update --check
+osrs-random update
+```
+
+The interactive menu checks for updates at startup and offers to install them.
+Declining continues normally. `update` explicitly installs the latest newer
+release from this repository's GitHub Releases. It downloads the ZIP for the
+compiled target, checks its size and GitHub SHA-256 digest, and replaces the
+executable. Restart the app afterwards. Its directory must be writable.
+
+Official binaries embed the timestamped release tag, so repeated checks recognise
+an installed release and older releases never replace newer ones. `version`
+prints the package version and embedded tag without accessing the network.
+Source builds without a release tag cannot be compared with timestamped releases;
+install an official release to use the updater. Other architectures and ABIs must
+be built and updated from source.
 
 ## Development
 
@@ -82,7 +104,10 @@ cargo fmt --check
 cargo clippy --locked --all-targets -- -D warnings
 ```
 
-Tests use local fixtures and do not require the live data sources. CI checks Linux and Windows. Dependencies are locked in `Cargo.lock`.
+Tests use local fixtures and do not require the live data sources. CI checks Linux
+and Windows. Pushes to `master` build both targets with the same release tag and
+publish only after checks and both uploads complete. Dependencies are locked in
+`Cargo.lock`.
 
 Report bugs or data-source problems on the
 [issue tracker](https://github.com/stackrot/osrs-random/issues).
