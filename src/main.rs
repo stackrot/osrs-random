@@ -1,322 +1,261 @@
-use clap::{Parser, Subcommand};
-use crossterm::style::{Attribute, Stylize};
-use once_cell::sync::Lazy;
-use prettytable::{row, Table};
-use rand::prelude::*;
-use serde::Deserialize;
-use std::collections::HashMap;
-use std::io::{self, Write};
+mod catalog;
+mod net;
 
-/// Static mapping of boss categories to their respective bosses
-static BOSS_CATEGORIES: Lazy<HashMap<&'static str, Vec<&'static str>>> = Lazy::new(|| {
-    HashMap::from([
-        ("World Bosses", vec![
-            "Barrows", "Scurrius", "Giant Mole", "Deranged Archaeologist", "DKs", "Sarachnis",
-            "Perilous Moons", "Kalphite Queen", "Corporeal Beast", "Zulrah", "Vorkath", "Phantom Muspah",
-            "Nightmare / Phosani's Nightmare", "Duke Sucellus", "The Leviathan", "The Whisperer", "Vardorvis", "Obor",
-            "Bryophyta", "The Mimic", "Hespori", "Skotizo", "Amoxliatl", "The Hueycoatl", "Royal Titans"
-        ]),
-        ("God Wars", vec!["Kree'arra", "Zilyana", "Graardor", "K'ril", "Nex"]),
-        ("Wilderness Bosses", vec![
-            "Chaos Fanatic", "Crazy Archaeologist", "Scorpia", "King Black Dragon", 
-            "Vet'ion / Calvar'ion", "Venenatis / Spindel", "Callisto / Artio",
-            "Chaos Elemental"
-        ]),
-        ("Slayer Only Bosses", vec![
-            "Grotesque Guardians", "Abyssal Sire", "Kraken", "Cerberus", "Thermonuclear Smoke Devil",
-            "Alchemical Hydra", "Araxxor"
-        ]),
-        ("Minigame Bosses", vec!["Gauntlet", "TzTok-Jad", "TzKal-Zuk", "Sol Heredit"]),
-        ("Skilling Bosses", vec!["Tempoross", "Wintertodt", "Zalcano"]),
-        ("Raids", vec!["Chambers of Xeric", "Tombs of Amascut", "Theatre of Blood"]),
-    ])
-});
+use anyhow::{bail, Context, Result};
+use catalog::Catalog;
+use clap::{CommandFactory, Parser, Subcommand};
+use crossterm::cursor::MoveTo;
+use crossterm::style::Stylize;
+use crossterm::terminal::{Clear, ClearType};
+use rand::seq::IndexedRandom;
+use std::io::{self, IsTerminal, Write};
+use std::process::ExitCode;
 
-/// CLI configuration using clap
 #[derive(Parser)]
-#[clap(author = "stackrot", version = env!("CARGO_PKG_VERSION"), about = "OSRS Random Generator")]
+#[command(author, version, about = "OSRS Random Generator")]
 struct Cli {
-    #[clap(subcommand)]
+    /// Use cached or bundled boss and skill data without network requests
+    #[arg(long, global = true)]
+    offline: bool,
+    #[command(subcommand)]
     command: Option<Commands>,
 }
 
-/// Available commands for the CLI
 #[derive(Subcommand)]
 enum Commands {
-    #[clap(about = "Generate a random boss from various categories")]
-    Boss,
-    #[clap(about = "Generate a random skill to train")]
+    /// Choose a random boss
+    Boss {
+        /// Exclude a category by name (repeat for multiple categories)
+        #[arg(long = "exclude")]
+        exclusions: Vec<String>,
+    },
+    /// Choose a random skill to train
     Skill,
-    #[clap(about = "Display help information")]
-    Help,
-    #[clap(about = "List all available bosses")]
+    /// List all bosses by category
     ListBosses,
-    #[clap(about = "Display version information")]
+    /// List all skills
+    ListSkills,
+    /// Refresh the cached boss and skill lists
+    RefreshData,
+    /// Display the installed version and release tag
     Version,
 }
 
-/// Main entry point for the application
-fn main() {
+fn main() -> ExitCode {
     let cli = Cli::parse();
-    match &cli.command {
-        Some(Commands::Boss) => generate_boss(),
-        Some(Commands::Skill) => generate_skill(),
-        Some(Commands::Help) => show_help(),
-        Some(Commands::ListBosses) => list_all_bosses(),
+    if let Err(error) = run(cli) {
+        eprintln!("{error:#}");
+        return ExitCode::FAILURE;
+    }
+    ExitCode::SUCCESS
+}
+
+fn run(cli: Cli) -> Result<()> {
+    match cli.command {
         Some(Commands::Version) => show_version(),
-        None => interactive_menu(),
-    }
-}
-
-/// Displays an interactive menu for the user to choose options
-fn interactive_menu() {
-    loop {
-        clear_screen();
-        println!("{}", "OSRS Random Generator".bold().attribute(Attribute::Underlined).cyan());
-        println!("{}", "Please choose an option:".cyan());
-        println!("1. Boss Chooser");
-        println!("2. Skill Chooser");
-        println!("3. List All Bosses");
-        println!("4. Version Information");
-        println!("5. Exit");
-        print!("{}", "Enter your choice (1-5): ".cyan());
-        io::stdout().flush().unwrap();
-
-        let input = read_input();
-        match input.trim() {
-            "1" => generate_boss(),
-            "2" => generate_skill(),
-            "3" => list_all_bosses(),
-            "4" => {
-                clear_screen();
-                show_version();
-                pause_before_clearing();
-            },
-            "5" => {
-                clear_screen();
-                println!("Thank you for using the OSRS Random Generator!");
-                break;
+        Some(Commands::RefreshData) => {
+            if cli.offline {
+                bail!("Refreshing data requires a network connection; remove --offline");
             }
-            _ => {
-                clear_screen();
-                println!("{}", "Invalid option. Please try again.".red());
-                pause_before_clearing();
+            let catalog = catalog::load(true, false)?;
+            println!(
+                "Refreshed {} bosses and {} skills.",
+                catalog.bosses.values().map(Vec::len).sum::<usize>(),
+                catalog.skills.len()
+            );
+        }
+        Some(command) => {
+            let catalog = catalog::load(false, cli.offline)?;
+            match command {
+                Commands::Boss { exclusions } => generate_boss(&catalog, &exclusions)?,
+                Commands::Skill => generate_skill(&catalog)?,
+                Commands::ListBosses => list_bosses(&catalog),
+                Commands::ListSkills => println!("{}", catalog.skills.join(", ")),
+                _ => unreachable!(),
             }
         }
+        None if io::stdin().is_terminal() && io::stdout().is_terminal() => {
+            interactive_menu(cli.offline)?;
+        }
+        None => {
+            Cli::command().print_help()?;
+            println!();
+        }
     }
+    Ok(())
 }
 
-/// Reads a line of input from the user
-fn read_input() -> String {
-    let mut input = String::new();
-    io::stdin().read_line(&mut input).expect("Failed to read line");
-    input.trim().to_string()
-}
-
-/// Pauses execution until the user presses enter, then clears the screen
-fn pause_before_clearing() {
-    println!("\nPress enter to continue...");
-    let _ = io::stdin().read_line(&mut String::new()).unwrap();
-    clear_screen();
-}
-
-/// Clears the terminal screen based on the operating system
-fn clear_screen() {
-    if cfg!(target_os = "windows") {
-        std::process::Command::new("cmd")
-            .args(["/C", "cls"])
-            .status()
-            .unwrap();
-    } else {
-        std::process::Command::new("clear").status().unwrap();
-    }
-}
-
-/// Displays help information about the application
-fn show_help() {
-    clear_screen();
-    println!("{}", "OSRS Random Generator Help:".cyan());
-    println!("1. Boss Chooser - Randomly select a boss from various categories.");
-    println!("2. Skill Chooser - Randomly select a skill to train.");
-    println!("3. List All Bosses - Display all available bosses by category.");
-    println!("4. Exit - Exit the application.\n");
-    pause_before_clearing();
-}
-
-/// Displays the current version of the application
 fn show_version() {
-    let current_version = env!("CARGO_PKG_VERSION");
-    println!("OSRS Random Generator v{}", current_version);
-    
-    // Check for updates
-    match check_for_updates(current_version) {
-        Ok(has_update) => {
-            if has_update {
-                println!("\n{}", "A newer version is available!".yellow().bold());
-                println!("{}", "Visit https://github.com/stackrot/osrs-random/releases to download the latest version.".yellow());
-            } else {
-                println!("\n{}", "You are using the latest version.".green());
+    println!("OSRS Random Generator v{}", env!("CARGO_PKG_VERSION"));
+}
+
+fn interactive_menu(offline: bool) -> Result<()> {
+    clear_screen()?;
+    let mut catalog = None;
+    loop {
+        println!("{}", "OSRS Random Generator".bold().underlined().cyan());
+        println!("1. Boss Chooser\n2. Skill Chooser\n3. List All Bosses");
+        println!(
+            "4. Version Information\n5. Exit\n6. Refresh Bosses and Skills\n7. List All Skills"
+        );
+        print!("Enter your choice (1-7): ");
+        io::stdout().flush()?;
+        let Some(input) = read_input()? else {
+            return Ok(());
+        };
+        if input == "5" {
+            return Ok(());
+        }
+        clear_screen()?;
+        let result = menu_action(&input, offline, &mut catalog);
+        match result {
+            Ok(true) => {
+                pause()?;
+                return Ok(());
             }
-        },
-        Err(e) => {
-            println!("\n{}", "Could not check for updates.".red());
-            println!("{}", format!("Error: {}", e).red());
+            Ok(false) => {}
+            Err(error) => eprintln!("{error:#}"),
         }
+        if !pause()? {
+            return Ok(());
+        }
+        clear_screen()?;
     }
 }
 
-/// GitHub release information
-#[derive(Deserialize, Debug)]
-struct GitHubRelease {
-    tag_name: String,
-}
-
-/// Checks if a newer version is available on GitHub
-fn check_for_updates(current_version: &str) -> Result<bool, Box<dyn std::error::Error>> {
-    // GitHub API URL for releases
-    let url = "https://api.github.com/repos/stackrot/osrs-random/releases/latest";
-    
-    // Create a client with a custom user agent
-    let client = reqwest::blocking::Client::builder()
-        .user_agent("osrs-random-version-checker")
-        .build()?;
-    
-    // Make the request
-    let response = client.get(url).send()?;
-    
-    // Check if the request was successful
-    if response.status().is_success() {
-        // Parse the response
-        let release: GitHubRelease = response.json()?;
-        
-        // Extract version from tag (remove 'v' prefix if present)
-        let latest_version = release.tag_name.trim_start_matches('v');
-        
-        // Special case: GitHub releases use timestamp-based versioning (e.g., 20250304093829)
-        // while the package uses semantic versioning (e.g., 1.0.0)
-        // We'll consider them equivalent for now
-        if latest_version.len() > 8 && latest_version.chars().all(|c| c.is_digit(10)) {
-            // This is a timestamp-based version, not a semantic version
-            // For now, we'll consider the user to be up-to-date
-            return Ok(false);
+fn menu_action(input: &str, offline: bool, catalog: &mut Option<Catalog>) -> Result<bool> {
+    match input {
+        "4" => show_version(),
+        "6" if !offline => {
+            *catalog = Some(catalog::load(true, false)?);
+            println!("Refreshed boss and skill data.");
         }
-        
-        // Compare versions (simple string comparison)
-        Ok(latest_version != current_version)
-    } else {
-        Err(format!("Failed to fetch latest release: HTTP {}", response.status()).into())
-    }
-}
-
-/// Generates a random skill for the user to train
-fn generate_skill() {
-    let skills = [
-        "Attack", "Strength", "Defence", "Ranged", "Prayer", "Magic", "Hitpoints",
-        "Runecraft", "Crafting", "Mining", "Smithing", "Fishing", "Cooking", "Firemaking",
-        "Woodcutting", "Agility", "Herblore", "Thieving", "Fletching", "Slayer", "Farming",
-        "Construction", "Hunter"
-    ];
-    let skill = skills.choose(&mut rand::thread_rng()).unwrap();
-
-    println!("\nRandomly selected skill to train:\n");
-    let mut table = Table::new();
-    table.add_row(row![skill.bold().green()]);
-    table.printstd();
-    pause_before_clearing();
-}
-
-/// Generates a random boss for the user to fight
-/// 
-/// Allows the user to exclude certain categories of bosses
-fn generate_boss() {
-    let keys: Vec<&str> = BOSS_CATEGORIES.keys().cloned().collect();
-    println!("{}", "\nDo you want to exclude any categories? (yes/no)".cyan());
-    let choice = read_input();
-
-    let mut exclusions = Vec::new();
-    if choice.eq_ignore_ascii_case("yes") {
-        println!("{}", "\nEnter the numbers of categories you wish to exclude, separated by spaces:".cyan());
-        for (index, key) in keys.iter().enumerate() {
-            println!("{}. {}", index + 1, key);
+        "6" => bail!("This option requires a network connection"),
+        "1" | "2" | "3" | "7" => {
+            if catalog.is_none() {
+                *catalog = Some(catalog::load(false, offline)?);
+            }
+            let catalog = catalog.as_ref().context("Missing catalogue")?;
+            match input {
+                "1" => {
+                    if let Some(exclusions) = read_exclusions(catalog)? {
+                        generate_boss(catalog, &exclusions)?;
+                    }
+                }
+                "2" => generate_skill(catalog)?,
+                "3" => list_bosses(catalog),
+                _ => println!("{}", catalog.skills.join(", ")),
+            }
         }
-
-        let input = read_input();
-        exclusions = input.split_whitespace()
-            .filter_map(|num| num.parse::<usize>().ok())
-            .filter(|&num| num > 0 && num <= keys.len())
-            .collect();
+        _ => println!("Invalid option. Please try again."),
     }
+    Ok(false)
+}
 
-    let filtered_keys: Vec<&str> = if exclusions.is_empty() {
-        keys
-    } else {
-        keys.into_iter().enumerate()
-            .filter(|(i, _)| !exclusions.contains(&(i + 1)))
-            .map(|(_, k)| k)
-            .collect()
+fn read_input() -> Result<Option<String>> {
+    let mut input = String::new();
+    if io::stdin().read_line(&mut input)? == 0 {
+        return Ok(None);
+    }
+    Ok(Some(input.trim().to_owned()))
+}
+
+fn pause() -> Result<bool> {
+    println!("\nPress enter to continue...");
+    Ok(read_input()?.is_some())
+}
+
+fn clear_screen() -> Result<()> {
+    crossterm::execute!(io::stdout(), Clear(ClearType::All), MoveTo(0, 0))?;
+    Ok(())
+}
+
+fn read_exclusions(catalog: &Catalog) -> Result<Option<Vec<String>>> {
+    let categories: Vec<_> = catalog.bosses.keys().collect();
+    for (index, category) in categories.iter().enumerate() {
+        println!("{}. {category}", index + 1);
+    }
+    println!("Enter category numbers to exclude, separated by spaces (enter for none):");
+    let Some(input) = read_input()? else {
+        return Ok(None);
     };
-
-    if filtered_keys.is_empty() {
-        println!("All categories have been excluded. No bosses available.");
-        return;
+    let mut exclusions = Vec::new();
+    for number in input.split_whitespace() {
+        let index = number.parse::<usize>().context("Invalid category number")?;
+        let category = index
+            .checked_sub(1)
+            .and_then(|index| categories.get(index))
+            .context("Category number is out of range")?;
+        exclusions.push((*category).clone());
     }
-
-    let category = filtered_keys.choose(&mut rand::thread_rng()).unwrap();
-    let bosses = BOSS_CATEGORIES.get(category).unwrap();
-    let boss = bosses.choose(&mut rand::thread_rng()).unwrap();
-
-    println!();
-    let mut table = Table::new();
-    table.add_row(row!["Category", "Boss"]);
-    table.add_row(row![category.bold().yellow(), boss.bold().green()]);
-    table.printstd();
-    pause_before_clearing();
+    Ok(Some(exclusions))
 }
 
-/// Lists all available bosses organized by category
-/// 
-/// Also provides information about reporting missing bosses
-fn list_all_bosses() {
-    clear_screen();
-    println!("{}", "All Available Bosses:".bold().attribute(Attribute::Underlined).cyan());
-    println!();
-    
-    // Use simple text-based formatting instead of tables
-    for (category, bosses) in BOSS_CATEGORIES.iter() {
-        // Print category header
-        println!("{}: ", category.bold().yellow());
-        
-        // Print bosses with proper wrapping
-        let mut line = String::new();
-        let max_line_length = 80;
-        
-        for boss in bosses {
-            // If adding this boss would make the line too long, print the current line and start a new one
-            if line.len() + boss.len() + 2 > max_line_length && !line.is_empty() {
-                println!("  {}", line);
-                line.clear();
-            }
-            
-            // Add the boss to the current line
-            if line.is_empty() {
-                line.push_str(boss);
-            } else {
-                line.push_str(", ");
-                line.push_str(boss);
-            }
+fn generate_skill(catalog: &Catalog) -> Result<()> {
+    let skill = catalog
+        .skills
+        .choose(&mut rand::rng())
+        .context("No skills available")?;
+    println!("{skill}");
+    Ok(())
+}
+
+fn generate_boss(catalog: &Catalog, exclusions: &[String]) -> Result<()> {
+    for excluded in exclusions {
+        if !catalog
+            .bosses
+            .keys()
+            .any(|name| name.eq_ignore_ascii_case(excluded))
+        {
+            bail!("Unknown category '{excluded}'; see 'osrs-random list-bosses'");
         }
-        
-        // Print any remaining bosses
-        if !line.is_empty() {
-            println!("  {}", line);
-        }
-        
-        println!(); // Add a blank line between categories
     }
-    
-    println!();
-    println!("{}", "Missing a boss? Please report it at:".cyan());
-    println!("{}", "https://github.com/stackrot/osrs-random/issues".underlined().cyan());
-    
-    pause_before_clearing();
+    let categories: Vec<_> = catalog
+        .bosses
+        .iter()
+        .filter(|(name, _)| {
+            !exclusions
+                .iter()
+                .any(|excluded| name.eq_ignore_ascii_case(excluded))
+        })
+        .collect();
+    let (category, bosses) = categories
+        .choose(&mut rand::rng())
+        .context("All categories have been excluded. No bosses available")?;
+    let boss = bosses
+        .choose(&mut rand::rng())
+        .context("No bosses in category")?;
+    println!("{category}: {boss}");
+    Ok(())
+}
+
+fn list_bosses(catalog: &Catalog) {
+    for (category, bosses) in &catalog.bosses {
+        println!("{category}:");
+        for boss in bosses {
+            println!("  {boss}");
+        }
+        println!();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn command_definitions_are_valid() {
+        Cli::command().debug_assert();
+    }
+
+    #[test]
+    fn exclusions_reject_typos_and_empty_selection() {
+        let catalog = Catalog {
+            bosses: [("World bosses".into(), vec!["Scurrius".into()])].into(),
+            skills: vec!["Sailing".into()],
+        };
+        assert!(generate_boss(&catalog, &["typo".into()]).is_err());
+        assert!(generate_boss(&catalog, &["WORLD BOSSES".into()]).is_err());
+        assert!(generate_boss(&catalog, &[]).is_ok());
+    }
 }

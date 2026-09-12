@@ -1,0 +1,114 @@
+{
+  "bosses": {
+    "God Wars Dungeon": [
+      "Commander Zilyana",
+      "General Graardor",
+      "K'ril Tsutsaroth",
+      "Kree'arra",
+      "Nex"
+    ],
+    "Instanced bosses": [
+      "Amoxliatl",
+      "Brutus",
+      "Doom of Mokhaiotl",
+      "Mad Angel",
+      "Maggot King",
+      "Phantom Muspah",
+      "Royal Titans",
+      "The Nightmare",
+      "Vorkath",
+      "Yama",
+      "Zulrah"
+    ],
+    "Minigame bosses": [
+      "Corrupted Hunllef",
+      "Crystalline Hunllef",
+      "Sol Heredit",
+      "TzKal-Zuk",
+      "TzTok-Jad"
+    ],
+    "Raids": [
+      "Chambers of Xeric",
+      "Theatre of Blood",
+      "Tombs of Amascut"
+    ],
+    "Skilling bosses": [
+      "Tempoross",
+      "Wintertodt",
+      "Zalcano"
+    ],
+    "Slayer bosses": [
+      "Abyssal Sire",
+      "Alchemical Hydra",
+      "Araxxor",
+      "Cerberus",
+      "Grotesque Guardians",
+      "Kraken",
+      "Shellbane gryphon",
+      "Thermonuclear smoke devil"
+    ],
+    "Sporadic bosses": [
+      "Bryophyta",
+      "Hespori",
+      "Obor",
+      "Skotizo",
+      "The Mimic"
+    ],
+    "The Forgotten Four": [
+      "Duke Sucellus",
+      "The Leviathan",
+      "The Whisperer",
+      "Vardorvis"
+    ],
+    "The Wilderness bosses": [
+      "Callisto",
+      "Chaos Elemental",
+      "Chaos Fanatic",
+      "Crazy archaeologist",
+      "King Black Dragon",
+      "Revenant maledictus",
+      "Scorpia",
+      "Venenatis",
+      "Vet'ion"
+    ],
+    "World bosses": [
+      "Corporeal Beast",
+      "Deranged archaeologist",
+      "Gemstone Crab",
+      "Giant Mole",
+      "Kalphite Queen",
+      "Moons of Peril",
+      "Sarachnis",
+      "Scurrius",
+      "The Barrows Brothers",
+      "The Dagannoth Kings",
+      "The Hueycoatl"
+    ]
+  },
+  "skills": [
+    "Agility",
+    "Attack",
+    "Construction",
+    "Cooking",
+    "Crafting",
+    "Defence",
+    "Farming",
+    "Firemaking",
+    "Fishing",
+    "Fletching",
+    "Herblore",
+    "Hitpoints",
+    "Hunter",
+    "Magic",
+    "Mining",
+    "Prayer",
+    "Ranged",
+    "Runecraft",
+    "Sailing",
+    "Slayer",
+    "Smithing",
+    "Strength",
+    "Thieving",
+    "Woodcutting"
+  ]
+}

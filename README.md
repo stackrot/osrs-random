@@ -1,82 +1,93 @@
 # OSRS Random Generator
 
-## Overview
-The OSRS Random Generator is a command-line tool designed to help OSRS players randomly select bosses and skills to focus on.
-
-## Features
-- **Boss Chooser**: Randomly selects a boss from various categories within OSRS.
-- **Skill Chooser**: Randomly picks a skill for training, helping you decide what to level up next.
-- **Boss List**: View all available bosses organized by category.
-- **Version Info**: Check which version of the tool you're using.
+A command-line boss and skill chooser for Old School RuneScape, for Linux and
+Windows.
 
 ## Installation
 
-You can download the latest release of the OSRS Random Generator for both Linux and Windows from the [Releases](https://github.com/stackrot/osrs-random/releases) page.
+Download `osrs-random-linux.zip` or `osrs-random-windows.zip` from the
+[latest release](https://github.com/stackrot/osrs-random/releases/latest).
+Extract it and run `osrs-random` or `osrs-random.exe`. Linux builds require
+x86-64 and glibc 2.35 or newer; Windows builds target x86-64.
 
-### Download and Run
+On Linux, if needed:
 
-#### Linux
-1. Download the latest `osrs-random-linux.zip` from the [Releases](https://github.com/stackrot/osrs-random/releases) page.
-2. Unzip the file:
-    ```sh
-    unzip osrs-random-linux.zip
-    ```
-3. Make the binary executable:
-    ```sh
-    chmod +x osrs-random
-    ```
-4. Run the application:
-    ```sh
-    ./osrs-random
-    ```
-
-#### Windows
-1. Download the latest `osrs-random-windows.zip` from the [Releases](https://github.com/stackrot/osrs-random/releases) page.
-2. Unzip the file.
-3. Run the application by double-clicking `osrs-random.exe` or executing it from the command prompt:
-    ```sh
-    osrs-random.exe
-    ```
+```sh
+chmod +x osrs-random
+./osrs-random
+```
 
 ## Usage
 
-### Boss Chooser
-To randomly select a boss from various categories:
+Run without arguments for the interactive menu. Commands return immediately
+without prompts, pauses or terminal clearing:
+
 ```sh
 osrs-random boss
-```
-
-### Skill Chooser
-To randomly pick a skill to train:
-```sh
+osrs-random boss --exclude 'The Wilderness bosses' --exclude 'Raids'
 osrs-random skill
-```
-
-### List All Bosses
-To view all available bosses organized by category:
-```sh
 osrs-random list-bosses
-```
-
-### Check Version
-To check which version of the tool you're using:
-```sh
+osrs-random list-skills
 osrs-random version
+osrs-random --help
 ```
 
-### Interactive Menu
-Run the application without arguments to use the interactive menu:
+Category names are case-insensitive; use `list-bosses` for current names. The
+interactive boss chooser lets you exclude categories by number. Selection keeps
+the original behaviour: choose a category uniformly, then a boss within it.
+
+## Live boss and skill data
+
+Bosses and categories come from the OSRS Wiki's
+[Bosses template](https://oldschool.runescape.wiki/w/Template:Bosses). Skills come
+from [Jagex's OSRS HiScores](https://secure.runescape.com/m=hiscore_oldschool/overall).
+New entries appear after the upstream source lists them and the cache refreshes;
+no application release is needed. The Wiki determines boss categories. Grouped
+encounters such as Barrows and raids are kept together; boss variants are grouped
+under the first encounter name in the Wiki entry.
+
+The catalogue refreshes on first use and when its cache is at least 24 hours old.
+Each interactive session reuses its loaded catalogue. Force a refresh with:
+
 ```sh
-osrs-random
+osrs-random refresh-data
 ```
 
-## Missing a Boss?
-If you notice a boss that's missing from our list or have any other suggestions, please open an issue on our [GitHub repository](https://github.com/stackrot/osrs-random/issues).
+If a fetch fails or a source returns incomplete data, the app keeps the last valid
+cache, or uses a bundled snapshot on first run. It reports when it falls back.
+An explicit `refresh-data` failure returns a non-zero exit status and preserves
+the existing cache.
 
-## Suggestions and Contributions
+```sh
+osrs-random --offline boss
+osrs-random --offline list-skills
+```
 
-If you have any suggestions, feature requests, or would like to contribute, please open an issue or submit a pull request on the [GitHub repository](https://github.com/stackrot/osrs-random).
+`--offline` disables data fetches. The cache is
+stored in `$XDG_CACHE_HOME/osrs-random/catalog-v1.json` (normally
+`~/.cache/osrs-random/catalog-v1.json`) on Linux, or
+`%LOCALAPPDATA%\osrs-random\cache\catalog-v1.json` on Windows.
 
-## License
+Source outages and markup changes can delay new data. See
+[data sources and attribution](data/README.md) for the bundled snapshot.
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+## Development
+
+Install current stable Rust, then:
+
+```sh
+cargo build --locked
+cargo test --locked
+cargo fmt --check
+cargo clippy --locked --all-targets -- -D warnings
+```
+
+Tests use local fixtures and do not require the live data sources. CI checks Linux and Windows. Dependencies are locked in `Cargo.lock`.
+
+Report bugs or data-source problems on the
+[issue tracker](https://github.com/stackrot/osrs-random/issues).
+
+## Licence
+
+Application code is [MIT licensed](LICENSE). See [data attribution](data/README.md)
+for OSRS Wiki content.

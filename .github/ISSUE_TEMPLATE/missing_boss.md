@@ -1,31 +1,23 @@
 ---
-name: Missing Boss Report
-about: Report a missing boss
-title: 'Add [BOSS NAME] to boss list'
-labels: enhancement, missing boss
+name: Boss or Skill Data Problem
+about: Report missing, miscategorised or stale live data
+title: '[DATA] '
+labels: bug
 assignees: stackrot
 ---
 
-## Boss Information
+## Missing or Incorrect Entry
 
-**Boss Name:** 
-<!-- Enter the name of the missing boss -->
+**Boss or skill:**
+**Expected category (bosses):**
+**OSRS Wiki or Jagex link:**
 
-**Category:** 
-<!-- Select the appropriate category for this boss -->
-- [ ] World Bosses
-- [ ] God Wars
-- [ ] Wilderness Bosses
-- [ ] Slayer Only Bosses
-- [ ] Minigame Bosses
-- [ ] Skilling Bosses
-- [ ] Raids
+## Refresh Result
 
-**Additional Information:**
-<!-- Provide any additional information about the boss, such as requirements, location, or other details -->
+Run `osrs-random refresh-data`, then `osrs-random list-bosses` or
+`osrs-random list-skills`. Include any error or fallback message below.
 
-## OSRS Wiki Link
-<!-- If available, provide a link to the OSRS Wiki page for this boss -->
+## Version and Environment
 
-## Version Information
-<!-- Which version of the OSRS Random Generator are you using? --> 
+Include the output of `osrs-random version`, your OS, and whether you are using
+`--offline`.
