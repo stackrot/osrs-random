@@ -2,7 +2,7 @@
 name = "osrs-random"
 version = "1.1.0"
 edition = "2021"
-rust-version = "1.88"
+rust-version = "1.89"
 authors = ["stackrot <dev@stackrot.dev>"]
 description = "A random boss and skill generator for Old School RuneScape"
 repository = "https://github.com/stackrot/osrs-random"
@@ -22,4 +22,4 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha2 = "0.11"
 tempfile = "3.27"
-zip = { version = "8.6", default-features = false, features = ["deflate-flate2-zlib-rs"] }
+zip = { version = "9.8", default-features = false, features = ["deflate-flate2-zlib-rs"] }
