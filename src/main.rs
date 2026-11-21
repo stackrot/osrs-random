@@ -2,7 +2,7 @@ mod catalog;
 mod net;
 mod update;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use catalog::Catalog;
 use clap::{CommandFactory, Parser, Subcommand};
 use crossterm::cursor::MoveTo;
@@ -147,7 +147,9 @@ fn interactive_menu(offline: bool) -> Result<()> {
     loop {
         println!("{}", "OSRS Random Generator".bold().underlined().cyan());
         println!("1. Boss Chooser\n2. Skill Chooser\n3. List All Bosses");
-        println!("4. Version Information\n5. Exit\n6. Update Application\n7. Refresh Bosses and Skills\n8. List All Skills");
+        println!(
+            "4. Version Information\n5. Exit\n6. Update Application\n7. Refresh Bosses and Skills\n8. List All Skills"
+        );
         print!("Enter your choice (1-8): ");
         io::stdout().flush()?;
         let Some(input) = read_input()? else {

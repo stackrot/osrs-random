@@ -1,4 +1,4 @@
-use anyhow::{bail, ensure, Context, Result};
+use anyhow::{Context, Result, bail, ensure};
 use reqwest::blocking::Client;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -58,7 +58,9 @@ fn is_newer(current: &str, latest: &str) -> Result<bool> {
             ensure!(latest.pre.is_empty(), "Latest release is a prerelease");
             Ok(latest.cmp_precedence(&current).is_gt())
         }
-        _ => bail!("Cannot compare this build with the release tag; install an official release from https://github.com/stackrot/osrs-random/releases"),
+        _ => bail!(
+            "Cannot compare this build with the release tag; install an official release from https://github.com/stackrot/osrs-random/releases"
+        ),
     }
 }
 

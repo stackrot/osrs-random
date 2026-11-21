@@ -1,4 +1,4 @@
-use anyhow::{ensure, Result};
+use anyhow::{Result, ensure};
 use reqwest::blocking::{Client, Response};
 use std::io::Read;
 use std::time::Duration;

@@ -1,4 +1,4 @@
-use anyhow::{ensure, Context, Result};
+use anyhow::{Context, Result, ensure};
 use directories::ProjectDirs;
 use scraper::{ElementRef, Html, Selector};
 use serde::{Deserialize, Serialize};
@@ -94,10 +94,10 @@ fn load_from(
 ) -> Result<Catalog> {
     let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
     let cached = path.and_then(read_cache);
-    if let Some(cache) = &cached {
-        if offline || (!refresh && is_fresh(cache.fetched_at, now)) {
-            return Ok(cached.context("Missing cache")?.catalog);
-        }
+    if let Some(cache) = &cached
+        && (offline || (!refresh && is_fresh(cache.fetched_at, now)))
+    {
+        return Ok(cached.context("Missing cache")?.catalog);
     }
     if !offline {
         match fetch() {
@@ -106,10 +106,10 @@ fn load_from(
                     fetched_at: now,
                     catalog,
                 };
-                if let Some(path) = path {
-                    if let Err(error) = write_cache(path, &cache) {
-                        eprintln!("Could not cache catalogue: {error}");
-                    }
+                if let Some(path) = path
+                    && let Err(error) = write_cache(path, &cache)
+                {
+                    eprintln!("Could not cache catalogue: {error}");
                 }
                 return Ok(cache.catalog);
             }
