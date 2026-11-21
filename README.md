@@ -14,7 +14,7 @@ Download and extract the [latest release](https://github.com/stackrot/osrs-rando
   ./osrs-random
   ```
 
-Both builds require x86-64; Linux also requires glibc 2.35 or newer.
+Both builds require x86-64. The Linux build is statically linked, so it doesn't need glibc and also runs on musl-based distributions such as Alpine.
 
 ## Usage
 

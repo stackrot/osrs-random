@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   prepare:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       tag: ${{ steps.release.outputs.tag }}
     steps:
@@ -27,8 +27,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-22.04
-            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-24.04
+            target: x86_64-unknown-linux-musl
             binary: osrs-random
             asset: osrs-random-linux.zip
           - os: windows-latest
@@ -40,6 +40,11 @@ jobs:
       OSRS_RANDOM_RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
     steps:
       - uses: actions/checkout@v7
+      - name: Install musl tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends musl-tools
       - uses: actions-rust-lang/setup-rust-toolchain@v2
         with:
           toolchain: stable
@@ -62,6 +67,9 @@ jobs:
           import zipfile
 
           binary = pathlib.Path("target") / os.environ["BUILD_TARGET"] / "release" / os.environ["BINARY_NAME"]
+          if os.environ["BUILD_TARGET"].endswith("-linux-musl"):
+              kind = subprocess.check_output(["file", "-b", str(binary)], text=True)
+              assert "static" in kind and "dynamic" not in kind, kind
           version = subprocess.check_output([str(binary), "version"], text=True)
           assert os.environ["OSRS_RANDOM_RELEASE_TAG"] in version, version
           subprocess.run([str(binary), "--offline", "skill"], check=True)
@@ -78,7 +86,7 @@ jobs:
 
   release:
     needs: [prepare, build]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
@@ -93,9 +101,13 @@ jobs:
           RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
           COMMIT_SHA: ${{ github.sha }}
         run: |
+          printf -v notes '%s\n\n%s\n%s' \
+            "Automatic build for commit $COMMIT_SHA." \
+            '- Linux: `osrs-random-linux.zip`, a static x86-64 binary that needs no glibc.' \
+            '- Windows: `osrs-random-windows.zip`, x86-64.'
           gh release create "$RELEASE_TAG" \
             --target "$COMMIT_SHA" \
             --title "Release $RELEASE_TAG" \
-            --notes "Automatic build for commit $COMMIT_SHA." \
+            --notes "$notes" \
             --draft osrs-random-linux.zip osrs-random-windows.zip
           gh release edit "$RELEASE_TAG" --draft=false --latest

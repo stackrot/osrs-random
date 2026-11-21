@@ -66,7 +66,11 @@ fn is_newer(current: &str, latest: &str) -> Result<bool> {
 
 fn platform(target: &str) -> Result<(&'static str, &'static str)> {
     match target {
-        "x86_64-unknown-linux-gnu" => Ok(("osrs-random-linux.zip", "osrs-random")),
+        // Keep this asset name: earlier gnu releases download it to update
+        // to the static musl build.
+        "x86_64-unknown-linux-gnu" | "x86_64-unknown-linux-musl" => {
+            Ok(("osrs-random-linux.zip", "osrs-random"))
+        }
         "x86_64-pc-windows-msvc" => Ok(("osrs-random-windows.zip", "osrs-random.exe")),
         _ => bail!("Self-updating is unavailable for {target}; build from source"),
     }
@@ -209,7 +213,8 @@ mod tests {
         assert!(platform("x86_64-unknown-linux-gnu").is_ok());
         assert!(platform("x86_64-pc-windows-msvc").is_ok());
         assert!(platform("aarch64-unknown-linux-gnu").is_err());
-        assert!(platform("x86_64-unknown-linux-musl").is_err());
+        assert!(platform("x86_64-unknown-linux-musl").is_ok());
+        assert!(platform("aarch64-unknown-linux-musl").is_err());
         assert!(platform("x86_64-pc-windows-gnu").is_err());
     }
 
