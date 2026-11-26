@@ -3,6 +3,15 @@ name: Release
 on:
   push:
     branches: [master]
+    # Only files that can change the release zips cut a new release.
+    paths:
+      - src/**
+      - data/**
+      - build.rs
+      - Cargo.toml
+      - Cargo.lock
+      - LICENSE
+      - .github/workflows/release.yml
   workflow_dispatch:
 
 permissions:
